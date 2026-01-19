@@ -113,7 +113,7 @@ void Modbus::send(uint8_t address, uint8_t function_code, uint16_t start_address
   //  return;
   //}
   if (!client.connect(host_.c_str(), port_)) {
-      ESP_LOGE("modbus_tcp", "Failed to connect to Modbus server %s:%d", host_.c_str(), port_);
+      ESP_LOGE(TAG, "Failed to connect to Modbus server %s:%d", host_.c_str(), port_);
       return;
     }
 
