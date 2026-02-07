@@ -97,6 +97,17 @@ select:
       - 2
       - 3
 
+  - platform: modbustcp_controller
+    modbustcp_controller_id: modbus_device
+    name: "Mode (optionsmap)"
+    address: 200
+    register_type: holding
+    value_type: U_WORD
+    optionsmap:
+      "Off": 0
+      "Auto": 2
+      "Manual": 3
+
 text_sensor:
   - platform: modbustcp_controller
     modbustcp_controller_id: modbus_device

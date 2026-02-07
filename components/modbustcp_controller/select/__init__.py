@@ -18,6 +18,7 @@ from ..const import (
     CONF_FORCE_NEW_RANGE,
     CONF_MODBUSTCP_CONTROLLER_ID,
     CONF_OPTION_VALUES,
+    CONF_OPTIONS_MAP,
     CONF_REGISTER_COUNT,
     CONF_REGISTER_TYPE,
     CONF_SKIP_UPDATES,
@@ -34,7 +35,22 @@ ModbusTCPSelect = modbustcp_controller_ns.class_(
 )
 
 
+def _preprocess_optionsmap(config):
+    if CONF_OPTIONS_MAP in config:
+        if CONF_OPTIONS in config or CONF_OPTION_VALUES in config:
+            raise cv.Invalid("optionsmap can't be used together with options/option_values")
+        options_map = config[CONF_OPTIONS_MAP]
+        if not options_map:
+            raise cv.Invalid("optionsmap must not be empty")
+        config = dict(config)
+        config[CONF_OPTIONS] = list(options_map.keys())
+        config[CONF_OPTION_VALUES] = list(options_map.values())
+    return config
+
+
 def _validate_select_config(config):
+    if not config[CONF_OPTIONS]:
+        raise cv.Invalid("options must not be empty")
     if config[CONF_VALUE_TYPE] in ["FP32", "FP32_R"]:
         raise cv.Invalid("value_type for select must be an integer type (not FP32/FP32_R)")
     if CONF_OPTION_VALUES in config:
@@ -44,16 +60,19 @@ def _validate_select_config(config):
 
 
 CONFIG_SCHEMA = cv.All(
+    _preprocess_optionsmap,
     select.select_schema(ModbusTCPSelect)
     .extend(cv.COMPONENT_SCHEMA)
     .extend(ModbusItemBaseSchema)
     .extend(
         {
+            cv.Optional(CONF_OPTIONS): cv.ensure_list(cv.string),
             cv.Optional(CONF_REGISTER_TYPE): cv.enum(MODBUS_WRITE_REGISTER_TYPE),
             cv.Optional(CONF_VALUE_TYPE, default="U_WORD"): cv.enum(SENSOR_VALUE_TYPE),
             cv.Optional(CONF_REGISTER_COUNT, default=0): cv.positive_int,
             cv.Optional(CONF_USE_WRITE_MULTIPLE, default=False): cv.boolean,
             cv.Optional(CONF_OPTION_VALUES): cv.ensure_list(cv.int_),
+            cv.Optional(CONF_OPTIONS_MAP): cv.Schema({cv.string: cv.int_}),
             cv.Optional(CONF_WRITE_LAMBDA): cv.returning_lambda,
         }
     ),
