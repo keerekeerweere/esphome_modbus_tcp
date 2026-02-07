@@ -1,7 +1,13 @@
 import esphome.codegen as cg
 from esphome.components import number
 import esphome.config_validation as cv
-from esphome.const import CONF_ADDRESS, CONF_ID
+from esphome.const import (
+    CONF_ADDRESS,
+    CONF_ID,
+    CONF_MAX_VALUE,
+    CONF_MIN_VALUE,
+    CONF_STEP,
+)
 
 from .. import (
     MODBUS_WRITE_REGISTER_TYPE,
@@ -43,6 +49,9 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_REGISTER_COUNT, default=0): cv.positive_int,
             cv.Optional(CONF_USE_WRITE_MULTIPLE, default=False): cv.boolean,
             cv.Optional(CONF_WRITE_LAMBDA): cv.returning_lambda,
+            cv.Optional(CONF_MIN_VALUE): cv.float_,
+            cv.Optional(CONF_MAX_VALUE): cv.float_,
+            cv.Optional(CONF_STEP): cv.float_,
         }
     ),
     validate_modbus_register,

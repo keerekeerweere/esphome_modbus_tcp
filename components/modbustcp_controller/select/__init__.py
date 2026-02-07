@@ -42,9 +42,44 @@ def _preprocess_optionsmap(config):
         options_map = config[CONF_OPTIONS_MAP]
         if not options_map:
             raise cv.Invalid("optionsmap must not be empty")
+        # Accept either a dict or a list of one-key dicts
+        if isinstance(options_map, list):
+            options = []
+            values = []
+            for item in options_map:
+                if not isinstance(item, dict) or len(item) != 1:
+                    raise cv.Invalid("optionsmap list entries must be one-key maps")
+                (k, v), = item.items()
+                options.append(str(k))
+                values.append(int(v))
+        else:
+            options = list(options_map.keys())
+            values = list(options_map.values())
         config = dict(config)
-        config[CONF_OPTIONS] = list(options_map.keys())
-        config[CONF_OPTION_VALUES] = list(options_map.values())
+        config[CONF_OPTIONS] = options
+        config[CONF_OPTION_VALUES] = values
+    return config
+
+
+def _preprocess_option_values_alias(config):
+    if CONF_OPTION_VALUES not in config:
+        return config
+    raw = config[CONF_OPTION_VALUES]
+    if not isinstance(raw, list):
+        return config
+    if not raw or not all(isinstance(item, dict) for item in raw):
+        return config
+    options = []
+    values = []
+    for item in raw:
+        if len(item) != 1:
+            raise cv.Invalid("option_values map entries must have exactly one key/value")
+        (k, v), = item.items()
+        options.append(str(k))
+        values.append(int(v))
+    config = dict(config)
+    config[CONF_OPTIONS] = options
+    config[CONF_OPTION_VALUES] = values
     return config
 
 
@@ -61,6 +96,7 @@ def _validate_select_config(config):
 
 CONFIG_SCHEMA = cv.All(
     _preprocess_optionsmap,
+    _preprocess_option_values_alias,
     select.select_schema(ModbusTCPSelect)
     .extend(cv.COMPONENT_SCHEMA)
     .extend(ModbusItemBaseSchema)
@@ -71,7 +107,10 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_VALUE_TYPE, default="U_WORD"): cv.enum(SENSOR_VALUE_TYPE),
             cv.Optional(CONF_REGISTER_COUNT, default=0): cv.positive_int,
             cv.Optional(CONF_USE_WRITE_MULTIPLE, default=False): cv.boolean,
-            cv.Optional(CONF_OPTION_VALUES): cv.ensure_list(cv.int_),
+            cv.Optional(CONF_OPTION_VALUES): cv.Any(
+                cv.ensure_list(cv.int_),
+                cv.ensure_list(cv.Schema({cv.string: cv.int_})),
+            ),
             cv.Optional(CONF_OPTIONS_MAP): cv.Schema({cv.string: cv.int_}),
             cv.Optional(CONF_WRITE_LAMBDA): cv.returning_lambda,
         }
