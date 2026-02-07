@@ -1,13 +1,7 @@
 import esphome.codegen as cg
 from esphome.components import number
 import esphome.config_validation as cv
-from esphome.const import (
-    CONF_ADDRESS,
-    CONF_ID,
-    CONF_MAX_VALUE,
-    CONF_MIN_VALUE,
-    CONF_STEP,
-)
+from esphome.const import CONF_ADDRESS, CONF_ID, CONF_MAX_VALUE, CONF_MIN_VALUE, CONF_STEP
 
 from .. import (
     MODBUS_WRITE_REGISTER_TYPE,
@@ -73,7 +67,12 @@ async def to_code(config):
         config[CONF_FORCE_NEW_RANGE],
     )
     await cg.register_component(var, config)
-    await number.register_number(var, config)
+    min_value = config.get(CONF_MIN_VALUE, 0.0)
+    max_value = config.get(CONF_MAX_VALUE, 100.0)
+    step = config.get(CONF_STEP, 1.0)
+    await number.register_number(
+        var, config, min_value=min_value, max_value=max_value, step=step
+    )
 
     paren = await cg.get_variable(config[CONF_MODBUSTCP_CONTROLLER_ID])
     cg.add(var.set_parent(paren))
